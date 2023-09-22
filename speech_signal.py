@@ -1,41 +1,49 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io.wavfile as sound
+import scipy.fft as fft
 
-samplerate, data = sound.read('recording1.wav')
+# Load the audio signal from the WAV file
+samplerate, data = sound.read('recording4.wav')
+
+# Define the parameters for the 50 kHz noise
+noise_frequency = 50  # 50 kHz
+noise_amplitude = max(data[:,0]) # Adjust the amplitude as needed
+
+# Generate the noise signal
 duration = len(data) / samplerate
 time = np.arange(0, duration, 1 / samplerate)
+noise_signal = noise_amplitude * np.sin(2 * np.pi * noise_frequency * time)
 
-noise_avg_watts = (50000)**2
+# Add the noise to both channels of the audio signal
+with_noise = data + noise_signal[:, np.newaxis]  # Add noise to both channels
+print(np.max(with_noise))
 
-# Generate separate samples of white noise for each channel
-mean_noise = 0
-noise_volts_left = np.random.normal(mean_noise, np.sqrt(noise_avg_watts), len(data))
-noise_volts_right = np.random.normal(mean_noise, np.sqrt(noise_avg_watts), len(data))
+# Create a subplot to compare the original and noisy signals
+# plt.figure(figsize=(10, 6))
 
-# Combine the noise for both channels
-noise_data = np.column_stack((data[:, 0] + noise_volts_left, data[:, 1] + noise_volts_right))
+# plt.subplot(2, 1, 1)
+# plt.plot(data[:, 0], label='Left Channel')
+# plt.plot(data[:, 1], label='Right Channel')
+# plt.title('Original Audio Signal')
+# plt.xlabel('Sample')
+# plt.ylabel('Amplitude')
+# plt.legend()
 
-plt.figure(figsize=(10, 6))
+# plt.subplot(2, 1, 2)
+# plt.plot(with_noise[:, 0], label='Left Channel with Noise')
+# plt.plot(with_noise[:, 1], label='Right Channel with Noise')
+# plt.title('Audio Signal with 50 kHz Noise')
+# plt.xlabel('Sample')
+# plt.ylabel('Amplitude')
+# plt.legend()
 
-# Plot the original left channel in blue
-#plt.plot(time, data[:, 0], label='Original Left Channel', color='blue')
+# plt.tight_layout()
 
-# Plot the original right channel in green
-#plt.plot(time, data[:, 1], label='Original Right Channel', color='green')
-
-# Plot the left channel with noise in red
-#plt.plot(time, noise_data[:, 0], label='Noisy Left Channel', color='red')
-
-# Plot the right channel with noise in orange
-#plt.plot(time, noise_data[:, 1], label='Noisy Right Channel', color='orange')
-plt.subplot(2,1,1)
-plt.plot(time,data)
-plt.subplot(2,1,2)
-plt.plot(time,noise_data[:,0])
-#plt.title('Audio Signal Comparison (Original vs. Noisy)')
-plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
-plt.legend()
-plt.grid(True)
+fft_plot = fft.dct(with_noise[:,1])
+plt.plot(time,fft_plot)
 plt.show()
+
+# Save the audio signal with noise to a new WAV file
+sound.write('noisy_recording.wav', samplerate, np.int16(with_noise))
+# print(max(data[:,0]))
